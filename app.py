@@ -7,7 +7,7 @@ from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 
 # Import your modules from src (do NOT import src.main to avoid changing CLI behavior)
-from src.recorder import AudioMonitor
+# from src.recorder import AudioMonitor
 from src.processor import transcribe, classify_transcript
 from src.senders import send_sms, send_email
 
@@ -210,4 +210,5 @@ def user_response():
 
 
 if __name__ == "__main__":
+
     app.run(debug=True, port=5000)
