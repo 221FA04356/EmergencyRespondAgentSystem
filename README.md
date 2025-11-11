@@ -1,21 +1,21 @@
 # EmergencyRespondAgentSystem
 
-Prerequisites (install once on the target machine)
+**Prerequisites (install once on the target machine)**
 
-Install Python 3.11 (the project was created with 3.11).
+1. Install Python 3.11 (the project was created with 3.11).
 
-Windows: download from python.org and check “Add Python to PATH”.
+2. Windows: download from python.org and check “Add Python to PATH”.
 
-Ubuntu/Debian: sudo apt install python3.11 python3.11-venv python3.11-dev (or use deadsnakes repo if needed).
+   Ubuntu/Debian: sudo apt install python3.11 python3.11-venv python3.11-dev (or use deadsnakes repo if needed).
 
-Install Visual Studio Code and open the workspace.
+3. Install Visual Studio Code and open the workspace.
 
-Install the Python extension in VS Code (Marketplace: “Python” by Microsoft).
+4. Install the Python extension in VS Code (Marketplace: “Python” by Microsoft).
 
 If on Windows and pip fails building a package, install the Build Tools for Visual Studio (C++ build tools).
 
 # Twilio
-#Note : Use Your own credentials. Create an account in twilio and then give your own credentials to get notifications and email to your mobile. Generate a US Trial Phone number. Also Add the phone numbers where you want to get message to in the active numbers section. 
+#Note : Use Your own credentials. Create an account in twilio and then give your own credentials to get notifications and email to your mobile. Generate a US Trial Phone number. Also Add the phone numbers where you want to get message to in the phone numbers-> manage-> verified caller ids and add your mobile number there. 
 Make sure to do this step before running the application. The credentials mentioned are not real.
 #Also create a Gmail App password from Gmail account. 16 letters password.
 steps 
@@ -28,7 +28,6 @@ clips/
 
 2) Create and activate a fresh virtual environment
 python -m venv .venv
-# activate
 .venv\Scripts\Activate.ps1   # if execution policy blocks, run: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 After activation, your prompt will show (.venv).
 
