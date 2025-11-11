@@ -1,17 +1,24 @@
 # src/main.py
+
 import os
 import time
 from dotenv import load_dotenv
-from recorder import AudioMonitor
-from processor import transcribe, classify_transcript
-from popup_alert import show_confirm_popup
-from senders import send_sms, send_email
+from src.recorder import AudioMonitor
+from src.processor import transcribe, classify_transcript
+from src.popup_alert import show_confirm_popup
+from src.senders import send_sms, send_email
+
 from datetime import datetime
 
+# Load environment variables
 load_dotenv()  # loads .env before using senders
 
+
 def wait_for_file_ready(path, min_size=2048, timeout=5):
-    """Wait until a file is fully written and ready for use."""
+    """
+    Wait until a file is fully written and ready for use.
+    Prevents processing half-written clips.
+    """
     start = time.time()
     while (not os.path.exists(path) or os.path.getsize(path) < min_size) and (time.time() - start) < timeout:
         time.sleep(0.2)
@@ -23,17 +30,18 @@ def wait_for_file_ready(path, min_size=2048, timeout=5):
 
 
 def on_event(clip_path):
+    """Handles audio event callback after clip is saved."""
     print("🎧 Event clip saved:", clip_path)
 
-    # ✅ Wait for file to be fully ready before use
+    # ✅ Ensure file is ready before processing
     try:
         wait_for_file_ready(clip_path, min_size=4096, timeout=8)
-        time.sleep(0.5)  # short buffer to ensure disk flush
+        time.sleep(0.5)  # short delay to ensure disk flush
     except Exception as e:
         print("⚠ File readiness check failed:", e)
         return
 
-    # 1. Transcribe the audio
+    # 1️⃣ Transcribe the audio
     try:
         transcript = transcribe(clip_path)
         print("🗣 Transcript:", transcript)
@@ -41,7 +49,7 @@ def on_event(clip_path):
         print("⚠ Transcription failed:", e)
         return
 
-    # 2. Classify the transcript
+    # 2️⃣ Classify the transcript
     try:
         cls = classify_transcript(transcript)
         print("🔍 Classification:", cls)
@@ -56,6 +64,8 @@ def on_event(clip_path):
     alert_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     snippet = transcript.replace("\n", " ").strip()
     MAX_SMS_LENGTH = 160
+
+    # 3️⃣ Handle classification results
 
     # CASE 1: Threat (high confidence)
     if top_label == "threat" or top_score > 0.7:
@@ -83,12 +93,12 @@ def on_event(clip_path):
         email_subject = "NOTICE: Possible concern detected"
         email_body = f"WARNING: Possible concern detected.\nTime: {alert_time}\nTranscript:\n{transcript}\nSource clip: {clip_path}"
 
-    # CASE 3: Safe
+    # CASE 3: Safe (low confidence)
     else:
         print("🟢 Classified safe. No action taken.")
         return
 
-    # 3. Send SMS
+    # 4️⃣ Send SMS alert
     try:
         print(f"📨 SMS length: {len(sms_message)}")
         send_sms(sms_message)
@@ -96,7 +106,7 @@ def on_event(clip_path):
     except Exception as e:
         print("❌ Failed to send SMS:", e)
 
-    # 4. Send email
+    # 5️⃣ Send email alert
     try:
         send_email(email_subject, email_body, attachment_path=clip_path)
         print("✅ Email alert sent successfully!")
@@ -105,6 +115,12 @@ def on_event(clip_path):
 
 
 if __name__ == "__main__":
+    # Ensure output folder exists
     os.makedirs("clips", exist_ok=True)
+
+    # Initialize audio monitor
     monitor = AudioMonitor(out_folder="clips")
+
+    # Begin continuous listening loop
+    print("🎤 Starting audio monitor... Waiting for events.")
     monitor.run(on_event)
