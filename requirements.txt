@@ -1,9 +1,7 @@
-sounddevice
 soundfile
 numpy
 pydub
 python-dotenv
 transformers
 torch
-simpleaudio
 twilio
