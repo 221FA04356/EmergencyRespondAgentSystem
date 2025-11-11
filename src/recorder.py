@@ -9,11 +9,14 @@ from datetime import datetime
 
 SAMPLE_RATE = 44100          # clear voice quality
 CHANNELS = 1
-RMS_TRIGGER = 0.035          # start level
-RMS_SILENCE = 0.015          # stop level
+
+# 🔧 Adjusted thresholds for stability
+RMS_TRIGGER = 0.055          # slightly higher to avoid noise false triggers
+RMS_SILENCE = 0.020          # silence level for stop detection
 SILENCE_HOLD = 2.0           # seconds of silence before stop
 PREBUFFER_SECONDS = 3        # include a few seconds before speech
 WAIT_AFTER_SAVE = 1.0        # make sure file is flushed
+MIC_WARMUP_SECONDS = 3       # wait before monitoring starts (important!)
 
 class AudioMonitor:
     def __init__(self, out_folder="clips"):
@@ -31,6 +34,10 @@ class AudioMonitor:
                             channels=CHANNELS,
                             dtype="float32",
                             blocksize=blocksize) as stream:
+            # 🕓 Allow mic to stabilize before triggering
+            print(f"⏳ Warming up microphone for {MIC_WARMUP_SECONDS}s...")
+            time.sleep(MIC_WARMUP_SECONDS)
+            print("🎙️ Microphone ready — starting detection.")
             while True:
                 data, _ = stream.read(blocksize)
                 yield data[:, 0] if CHANNELS == 1 else data
@@ -46,7 +53,7 @@ class AudioMonitor:
         return filename
 
     def run(self, on_event_callback):
-        print("🎙️ Monitoring mic...  Press Ctrl+C to stop.")
+        print("🎧 Monitoring started. Speak or play an alert sound to test.")
         try:
             stream_gen = self._record_stream()
             recording = []
@@ -56,16 +63,18 @@ class AudioMonitor:
             for block in stream_gen:
                 rms = self._rms(block)
 
-                # keep rolling prebuffer
+                # Keep rolling prebuffer
                 if not active:
                     self.prebuffer.extend(block)
 
+                # Start recording on loud sound
                 if not active and rms > RMS_TRIGGER:
                     print(f"🔊 Loud event detected (rms={rms:.4f}) — start recording")
                     active = True
                     recording = list(self.prebuffer)
                     self.prebuffer.clear()
 
+                # Continue while active
                 if active:
                     recording.extend(block)
                     if rms < RMS_SILENCE:
