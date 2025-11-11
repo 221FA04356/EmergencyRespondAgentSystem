@@ -1,4 +1,5 @@
 # app.py
+from dotenv import load_dotenv
 import os
 import time
 import queue
@@ -6,7 +7,7 @@ from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from src.processor import transcribe, classify_transcript
 from src.senders import send_sms, send_email
-
+load_dotenv()
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 # storage
@@ -141,3 +142,4 @@ def user_response():
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
+
