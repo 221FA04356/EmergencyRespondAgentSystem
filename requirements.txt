@@ -1,5 +1,6 @@
 sounddevice
 soundfile
+flask
 numpy
 pydub
 python-dotenv
