@@ -142,19 +142,15 @@ ffmpeg version 7.x.x ...
 
 From project root, with .venv active:
 
-python -m src.main
-# or
-python src/main.py
+python -m src.main or python src/main.py
+
 You should see console output from the app. main.py sets up an AudioMonitor and invokes monitor.run(on_event) — it watches/records audio clips into clips/ and then runs the on_event handling which may call Twilio/email.
 
 6) Test safely (without sending messages)
 
 To test the audio processing locally without sending SMS/email, run the included test_clip.py or temporarily comment out send_sms / send_email calls in src/main.py and replace with print(...) to confirm classification and transcription flow:
 
-python -m src.test_clip
-# or
-python src/test_clip.py
-
+python -m src.test_clip or python src/test_clip.py
 
 Open clips/ to verify generated wav files.
 
