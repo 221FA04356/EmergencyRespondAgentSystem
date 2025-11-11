@@ -1,3 +1,5 @@
+sounddevice
+simpleaudio
 soundfile
 numpy
 pydub
