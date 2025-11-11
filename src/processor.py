@@ -1,15 +1,19 @@
 # src/processor.py
-#from transformers import pipeline
+import random
 
-# ASR pipeline (choose a small whisper model for speed)
-asr = pipeline("automatic-speech-recognition", model="openai/whisper-tiny")  # tiny / small as per resource
-# zero-shot classifier (no fine-tuning required for prototype)
-zero_shot = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
-
+# Dummy transcription function
 def transcribe(file_path):
-    # placeholder for deployment; real transcription only works locally
-    return "transcription not available on free instance"
+    # You can return a placeholder or fixed text
+    return "Transcription not available on free deployment."
 
+# Dummy classification function
 def classify_transcript(transcript):
-    # dummy classification
-    return {"labels": ["safe"], "scores": [0.0]}
+    # Return a dummy classification
+    labels = ["safe", "threat"]
+    # Randomly pick one for demo
+    top_label = random.choice(labels)
+    top_score = round(random.uniform(0.0, 1.0), 2)
+    return {
+        "labels": [top_label],
+        "scores": [top_score]
+    }
