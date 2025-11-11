@@ -2,6 +2,8 @@
 
 **Prerequisites (install once on the target machine)**
 
+For Live Console Running in VSCode Terminal
+
 1. Install Python 3.11 (the project was created with 3.11).
 
 2. Windows: download from python.org and check “Add Python to PATH”.
@@ -156,5 +158,75 @@ python -m src.test_clip or python src/test_clip.py
 
 Open clips/ to verify generated wav files.
 <img width="1652" height="790" alt="Screenshot 2025-11-10 212400" src="https://github.com/user-attachments/assets/dea0e3d4-c1f4-4230-a0c0-8030cc160fe1" />
+
+For Flask Based Web-application
+
+A lightweight Flask-based web application that allows users to upload audio files (.wav, .mp3, etc.), process them on the server, and display instant visual alerts or analysis results on the webpage.
+Perfect for projects involving sound analysis, audio classification, or alert-triggered AI systems.
+
+🚀 Features
+
+📤 Upload Audio Files directly through the browser.
+
+🔊 Instant Alerts displayed when an uploaded file is processed.
+
+🧠 Plug-and-Play ML Integration — extend backend to run your sound classification or speech models.
+
+💾 Auto-Save Uploads with unique timestamped filenames.
+
+🌐 Flask-based Backend — simple, modular, and easy to extend.
+
+💻 Modern Web Interface — minimal HTML + JS for smooth interaction.
+⚙️ Installation
+1️⃣ Clone the Repository
+git clone https://github.com/<your-username>/flask-audio-upload.git
+cd flask-audio-upload
+
+2️⃣ Create a Virtual Environment
+python -m venv venv
+source venv/bin/activate       # On macOS/Linux
+venv\Scripts\activate          # On Windows
+.\.venv\Scripts\Activate.ps1
+pip install openai-whisper torch soundfile numpy
+pip install flask pydub
+3️⃣ Install Dependencies
+pip install -r requirements.txt
+
+
+requirements.txt example:
+
+Flask
+soundfile
+numpy
+
+▶️ Usage
+1️⃣ Start the Flask App
+python app.py
+
+2️⃣ Open in Browser
+
+Visit http://127.0.0.1:5000
+
+You’ll see a simple upload form.
+
+📁 Upload Flow
+
+Choose an audio file (.wav, .mp3, etc.)
+
+Click Upload
+
+The file is saved under /uploads
+
+A popup alert or result message appears in the browser
+
+Console logs show file details and processing status
+
+SAMPLE OUTPUTS:
+
+<img width="1919" height="991" alt="Screenshot 2025-11-11 183743" src="https://github.com/user-attachments/assets/7e3420dc-c141-4622-82d5-405a4d2dd2d8" />
+
+<img width="588" height="1280" alt="image" src="https://github.com/user-attachments/assets/870d6650-bc4f-48a0-91aa-4d6f9bc20353" />
+
+<img width="588" height="1280" alt="image" src="https://github.com/user-attachments/assets/08070e70-2e76-439e-bb3a-f50ab5dc18ec" />
 
 
