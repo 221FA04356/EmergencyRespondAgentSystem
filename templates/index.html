@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Emergency Monitoring System</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(120deg, #ffcccc, #ffe6e6);
+      text-align: center;
+      padding: 30px;
+    }
+    h1 { color: #b30000; margin-bottom: 20px; }
+    form, #liveSection {
+      background: white; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      display: inline-block; padding: 25px; margin: 15px;
+      width: 400px;
+    }
+    button {
+      padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;
+      font-weight: bold; color: white;
+    }
+    #uploadBtn { background: #b30000; }
+    #liveBtn { background: #2196f3; }
+    #safeBtn { background: #4CAF50; }
+    #dangerBtn { background: #f44336; }
+    #result { margin-top: 25px; text-align: left; background: #fff; padding: 20px; border-radius: 10px; display: inline-block; width: 80%; }
+
+    #alertModal {
+      display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); z-index: 100;
+    }
+    #alertContent {
+      background: white; border-radius: 10px; width: 400px;
+      margin: 15% auto; padding: 25px; text-align: center;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎙️ Emergency Monitoring System</h1>
+
+  <!-- Upload and Analyze Section -->
+  <form id="uploadForm" enctype="multipart/form-data">
+    <h3>Upload Audio File</h3>
+    <input type="file" name="file" accept="audio/*" required>
+    <br><br>
+    <button id="uploadBtn" type="submit">Upload & Analyze</button>
+  </form>
+
+  <!-- Live Monitoring Section -->
+  <div id="liveSection">
+    <h3>Live Audio Monitoring</h3>
+    <button id="liveBtn">Start Live Monitoring</button>
+    <p id="liveStatus"></p>
+  </div>
+
+  <!-- Results -->
+  <div id="result"></div>
+
+  <!-- Popup Modal -->
+  <div id="alertModal">
+    <div id="alertContent">
+      <h3>⚠ Possible Threat Detected!</h3>
+      <p id="alertMessage"></p>
+      <p>Auto alert in <span id="timer">10</span> seconds...</p>
+      <button id="safeBtn">I'm Safe</button>
+      <button id="dangerBtn">Send Alert</button>
+    </div>
+  </div>
+
+  <script>
+    const uploadForm = document.getElementById("uploadForm");
+    const liveBtn = document.getElementById("liveBtn");
+    const liveStatus = document.getElementById("liveStatus");
+    const modal = document.getElementById("alertModal");
+    const timerEl = document.getElementById("timer");
+    const alertMsg = document.getElementById("alertMessage");
+    const safeBtn = document.getElementById("safeBtn");
+    const dangerBtn = document.getElementById("dangerBtn");
+    const resultDiv = document.getElementById("result");
+    let mediaRecorder, countdown, transcriptData;
+
+    // Upload & Analyze
+    uploadForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(uploadForm);
+      const res = await fetch("/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      handleResult(data);
+    });
+
+    // Live Monitoring
+    liveBtn.addEventListener("click", async () => {
+      if (liveBtn.textContent.includes("Start")) startLive();
+      else stopLive();
+    });
+
+    async function startLive() {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      liveBtn.textContent = "Stop Live Monitoring";
+      liveStatus.textContent = "🎧 Listening...";
+
+      mediaRecorder.ondataavailable = async (e) => {
+        const blob = new Blob([e.data], { type: 'audio/wav' });
+        const formData = new FormData();
+        formData.append('chunk', blob, 'live.wav');
+        const res = await fetch('/live_monitor', { method: 'POST', body: formData });
+        const data = await res.json();
+        handleResult(data);
+      };
+
+      setInterval(() => {
+        if (mediaRecorder.state === "recording") {
+          mediaRecorder.stop();
+          mediaRecorder.start();
+        }
+      }, 5000);
+
+      mediaRecorder.start();
+    }
+
+    function stopLive() {
+      if (mediaRecorder) mediaRecorder.stop();
+      liveBtn.textContent = "Start Live Monitoring";
+      liveStatus.textContent = "⏹️ Stopped.";
+    }
+
+    // Handle Result
+    function handleResult(data) {
+      const event = data.event || data;  // handles both direct and nested cases
+
+      const transcript = event.transcript || "(no transcript)";
+      const classification = event.top_label || "unknown";
+      const confidence = (event.top_score !== undefined ? event.top_score.toFixed(3) : "N/A");
+      const time = event.timestamp || "N/A";
+
+      resultDiv.innerHTML = `
+        <h3>Analysis Result</h3>
+        <p><strong>Transcript:</strong> ${transcript}</p>
+        <p><strong>Classification:</strong> ${classification}</p>
+        <p><strong>Confidence:</strong> ${confidence}</p>
+        <p><strong>Time:</strong> ${time}</p>
+      `;
+
+      transcriptData = transcript;
+
+      if (classification === "threat" && event.top_score >= 0.5) showAlert();
+    }
+
+
+    // Popup Logic
+    function showAlert() {
+      modal.style.display = "block";
+      alertMsg.innerText = "Possible danger detected from recent audio.";
+      let t = 10;
+      timerEl.textContent = t;
+      countdown = setInterval(() => {
+        t--;
+        timerEl.textContent = t;
+        if (t <= 0) {
+          clearInterval(countdown);
+          sendAlert();
+          modal.style.display = "none";
+          resultDiv.innerHTML += `<p style="color:red;">⏰ No response — Alert sent!</p>`;
+        }
+      }, 1000);
+    }
+
+    safeBtn.onclick = () => {
+      clearInterval(countdown);
+      modal.style.display = "none";
+      resultDiv.innerHTML += `<p style="color:green;">✅ User confirmed safe — No alert sent!</p>`;
+    };
+
+    dangerBtn.onclick = () => {
+      clearInterval(countdown);
+      sendAlert();
+      modal.style.display = "none";
+      resultDiv.innerHTML += `<p style="color:red;">🚨 Alert manually sent!</p>`;
+    };
+
+    async function sendAlert() {
+      await fetch("/send_alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript: transcriptData })
+      });
+    }
+  </script>
+
+</body>
+</html>
