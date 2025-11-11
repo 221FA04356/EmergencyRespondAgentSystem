@@ -1,24 +1,17 @@
 # app.py
 import os
 import time
-import threading
 import queue
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
-
-# Import your modules from src (do NOT import src.main to avoid changing CLI behavior)
-# from src.recorder import AudioMonitor
 from src.processor import transcribe, classify_transcript
 from src.senders import send_sms, send_email
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 # storage
-EVENT_QUEUE = queue.Queue()        # events produced by live monitor
+EVENT_QUEUE = queue.Queue()        # events produced by uploads
 LATEST_EVENT = {}                  # last event (for quick display)
-MONITOR_THREAD = None
-MONITOR_THREAD_LOCK = threading.Lock()
-MONITOR_RUNNING = False
 
 CLIP_FOLDER = "clips"
 os.makedirs(CLIP_FOLDER, exist_ok=True)
@@ -38,58 +31,6 @@ def build_event_object(clip_path, transcript, classification):
         "top_score": top_score
     }
     return event
-
-
-def monitor_callback(clip_path):
-    """This callback is called by AudioMonitor when it saves a clip."""
-    try:
-        transcript = transcribe(clip_path)
-    except Exception as e:
-        transcript = f"[transcription error: {e}]"
-
-    try:
-        cls = classify_transcript(transcript)
-    except Exception as e:
-        cls = {"labels": ["unknown"], "scores": [0.0], "error": str(e)}
-
-    event = build_event_object(clip_path, transcript, cls)
-
-    # push into queue for frontend polling
-    EVENT_QUEUE.put(event)
-    LATEST_EVENT.clear()
-    LATEST_EVENT.update(event)
-
-    # (Important) do NOT auto-send alerts here — web UI will show modal and call /send_alert if needed
-    print(f"[monitor_callback] Event queued: {event['top_label']} {event['top_score']:.3f}")
-
-
-def start_monitor_thread():
-    global MONITOR_THREAD, MONITOR_RUNNING
-    with MONITOR_THREAD_LOCK:
-        if MONITOR_THREAD and MONITOR_THREAD.is_alive():
-            return False
-        MONITOR_RUNNING = True
-
-        def _thread_target():
-            monitor = AudioMonitor(out_folder=CLIP_FOLDER)
-            try:
-                monitor.run(monitor_callback)  # blocking until KeyboardInterrupt — but we run in separate daemon thread
-            except Exception as e:
-                print("[monitor thread] Exception:", e)
-            finally:
-                print("[monitor thread] Exited")
-
-        MONITOR_THREAD = threading.Thread(target=_thread_target, daemon=True)
-        MONITOR_THREAD.start()
-        return True
-
-
-def stop_monitor_thread():
-    global MONITOR_RUNNING
-    # AudioMonitor.run currently exits on KeyboardInterrupt only. We rely on user to stop process or add a stop mechanism.
-    # But for this implementation we provide a flag to indicate requested stop; actual stopping may require changes in recorder.
-    MONITOR_RUNNING = False
-    return True
 
 
 # ---------------- Routes ----------------
@@ -133,30 +74,22 @@ def upload():
 
 @app.route("/start_live", methods=["POST"])
 def start_live():
-    started = start_monitor_thread()
-    if started:
-        return jsonify({"status": "started"})
-    else:
-        return jsonify({"status": "already_running"})
+    """Live monitoring disabled in Render free instance."""
+    return jsonify({"status": "disabled"})
 
 
 @app.route("/stop_live", methods=["POST"])
 def stop_live():
-    # stopping the AudioMonitor gracefully would require a stop API in recorder; here we return a flag
-    stopped = stop_monitor_thread()
-    return jsonify({"status": "stopped" if stopped else "failed"})
+    """Live monitoring disabled in Render free instance."""
+    return jsonify({"status": "disabled"})
 
 
 @app.route("/poll_events", methods=["GET"])
 def poll_events():
-    """
-    Frontend polls this endpoint frequently (1s) to receive events queued by monitor_callback.
-    Returns list of events (could be 0 or more). We drain the queue.
-    """
+    """Frontend polls this endpoint to receive events queued by uploads."""
     events = []
     while not EVENT_QUEUE.empty():
         events.append(EVENT_QUEUE.get())
-    # also include latest summary
     latest = LATEST_EVENT.copy()
     return jsonify({"events": events, "latest": latest})
 
@@ -164,8 +97,8 @@ def poll_events():
 @app.route("/send_alert", methods=["POST"])
 def send_alert():
     """
-    Called by frontend when user didn't respond within timeout or user clicked Send Alert.
-    Expects JSON: { "transcript": "...", "clip_path": "..." (optional) }
+    Called by frontend when user didn't respond within timeout or clicked Send Alert.
+    Expects JSON: { "transcript": "...", "clip_path": "..." }
     Sends SMS and Email using your existing senders.
     """
     data = request.get_json() or {}
@@ -201,14 +134,10 @@ def send_alert():
 
 @app.route("/user_response", methods=["POST"])
 def user_response():
-    """
-    Called when user presses "I'm Safe" in web UI. No alert is sent.
-    """
+    """Called when user presses "I'm Safe" in web UI. No alert is sent."""
     data = request.get_json() or {}
-    # log or store response if needed
     return jsonify({"status": "user_safe"})
 
 
 if __name__ == "__main__":
-
     app.run(debug=True, port=5000)
