@@ -145,6 +145,8 @@ From project root, with .venv active:
 python -m src.main or python src/main.py
 
 You should see console output from the app. main.py sets up an AudioMonitor and invokes monitor.run(on_event) — it watches/records audio clips into clips/ and then runs the on_event handling which may call Twilio/email.
+We get a messsage pop up from the console tkinter and if the user is unable to respond in the auto timer of 10 seconds, the alert will be forwarded automatically to the Emergency user registered in the device via Email and SMS with the audio file of the situation happened around the place. 
+This can help in parents get fully analysis and aware of the situation happening around their child and call for help.
 
 6) Test safely (without sending messages)
 
