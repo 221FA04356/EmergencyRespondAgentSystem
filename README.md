@@ -153,5 +153,6 @@ To test the audio processing locally without sending SMS/email, run the included
 python -m src.test_clip or python src/test_clip.py
 
 Open clips/ to verify generated wav files.
+<img width="1652" height="790" alt="Screenshot 2025-11-10 212400" src="https://github.com/user-attachments/assets/dea0e3d4-c1f4-4230-a0c0-8030cc160fe1" />
 
 
