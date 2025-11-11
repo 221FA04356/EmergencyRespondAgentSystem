@@ -1,9 +1,7 @@
-sounddevice
-simpleaudio
+flask
+gunicorn
 soundfile
 numpy
 pydub
 python-dotenv
-transformers
-torch
 twilio
